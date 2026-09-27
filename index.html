@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปยอดหารบิล (Fluke)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex items-center justify-center p-4">
+
+    <div x-data="appData()" class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[600px] relative">
+        
+        <!-- Screen 1: Login -->
+        <div x-show="!currentUser" class="p-8 flex flex-col h-full justify-center space-y-6" x-transition.opacity>
+            <div class="text-center space-y-2">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">ระบบสรุปยอดบิล</h1>
+                <p class="text-sm text-gray-500">เลือกชื่อของคุณเพื่อดูยอดที่ต้องโอนคืนฟลุ๊ค</p>
+            </div>
+
+            <div class="space-y-4 mt-8">
+                <select x-model="selectedName" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-lg bg-white">
+                    <option value="" disabled selected>-- เลือกชื่อของคุณ --</option>
+                    <template x-for="name in uniqueNames" :key="name">
+                        <option :value="name" x-text="name"></option>
+                    </template>
+                </select>
+                
+                <button @click="login()" :disabled="!selectedName" 
+                    class="w-full py-3 rounded-xl text-white font-medium text-lg transition-all"
+                    :class="selectedName ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200' : 'bg-gray-300 cursor-not-allowed'">
+                    ดูยอดที่ต้องจ่าย
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Dashboard -->
+        <div x-show="currentUser" class="flex flex-col h-full bg-gray-50" style="display: none;" x-transition.opacity>
+            <!-- Header -->
+            <div class="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 sticky top-0">
+                <div>
+                    <p class="text-xs text-gray-500">สวัสดี,</p>
+                    <h2 class="text-xl font-bold text-gray-900" x-text="currentUser"></h2>
+                </div>
+                <div class="flex space-x-2">
+                    <button x-show="!isLocked" @click="copyLink()" class="text-sm px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <span>แชร์ลิ้งค์</span>
+                    </button>
+                    <button x-show="!isLocked" @click="logout()" class="text-sm px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors">
+                        เปลี่ยนชื่อ
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto pb-24">
+                <!-- Summary Card -->
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                    <p class="text-blue-100 text-sm mb-1">ยอดรวมที่คุณต้องโอนทั้งหมด</p>
+                    <div class="flex items-baseline space-x-2">
+                        <h3 class="text-4xl font-bold" x-text="formatMoney(totalAmount)"></h3>
+                        <span class="text-blue-200">บาท</span>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="mb-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">เลือกดูบิล (กดเพื่อกรองข้อมูล)</p>
+                    <div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-2">
+                        <button @click="activeFilter = 'all'" 
+                            class="whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                            :class="activeFilter === 'all' ? 'bg-gray-800 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600'">
+                            ทั้งหมด
+                        </button>
+                        <template x-for="bill in userBills" :key="bill.id">
+                            <button @click="activeFilter = bill.id" 
+                                class="whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                                :class="activeFilter === bill.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600'"
+                                x-text="bill.name">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Bill List -->
+                <div class="space-y-4">
+                    <template x-for="bill in filteredBills" :key="bill.id">
+                        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded-md" x-text="bill.date"></span>
+                                    <h4 class="font-bold text-gray-900 mt-2" x-text="bill.name"></h4>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">ยอดของคุณ</p>
+                                    <p class="font-bold text-lg text-red-500" x-text="formatMoney(bill.payers[currentUser]) + ' ฿'"></p>
+                                </div>
+                            </div>
+                            <button @click="openModal(bill.image)" class="mt-3 w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span>เปิดดูสลิปบิลนี้</span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Bottom Action -->
+            <div class="absolute bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button @click="qrOpen = true" class="w-full py-3 bg-[#00b900] hover:bg-[#00a000] text-white rounded-xl font-medium text-lg shadow-lg shadow-green-200 flex items-center justify-center space-x-2 transition-all">
+                    <span>💳 พร้อมเพย์: อิทธิพล สบายจิตต์ (0910180042)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Image Modal -->
+        <div x-show="modalOpen" class="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" style="display: none;" x-transition.opacity>
+            <div class="relative w-full h-full flex flex-col p-4 max-w-lg mx-auto">
+                <div class="flex justify-between items-center mb-4 pt-4">
+                    <h3 class="text-white font-medium" x-text="'รายละเอียดบิล: ' + modalImage"></h3>
+                    <button @click="closeModal()" class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 flex items-center justify-center overflow-hidden bg-gray-900 rounded-xl border border-gray-800">
+                    <div class="text-center p-6">
+                        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <p class="text-gray-400 text-sm mb-2">เมื่อนำไปสร้างเป็นเว็บไซต์จริง (Hosting)</p>
+                        <p class="text-gray-300 text-sm">ให้นำรูปภาพทั้ง 4 รูป (Project (1).jpg - Project (4).jpg) <br>ไปวางไว้ในโฟลเดอร์เดียวกับไฟล์ HTML นี้ <br>รูปภาพสลิปจะแสดงตรงนี้อัตโนมัติครับ</p>
+                        <p class="text-white font-mono bg-gray-800 px-3 py-1 rounded mt-4 text-xs" x-text="modalImage"></p>
+                    </div>
+                    <!-- 
+                    โค้ดสำหรับดึงรูปจริงมาแสดง (คอมเมนต์ไว้เพราะต้องมีไฟล์รูปอยู่ใน Server)
+                    <img :src="modalImage" class="max-w-full max-h-full object-contain rounded-lg" alt="Slip"> 
+                    -->
+                </div>
+                
+                <a :href="modalImage" :download="modalImage" class="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-lg flex items-center justify-center space-x-2 transition-all shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>ดาวน์โหลดรูปสลิปบิล</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- QR Modal -->
+        <div x-show="qrOpen" class="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" style="display: none;" x-transition.opacity>
+            <div class="relative w-full h-full flex flex-col p-4 max-w-lg mx-auto">
+                <div class="flex justify-between items-center mb-4 pt-4">
+                    <h3 class="text-white font-medium">สแกนเพื่อจ่ายเงิน</h3>
+                    <button @click="qrOpen = false" class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 flex flex-col items-center justify-center bg-white rounded-xl p-6 m-4 mt-0 shadow-2xl">
+                    <img src="my-qrcode.png" alt="QR Code" class="max-w-full max-h-[50vh] object-contain mb-6 rounded-lg shadow-sm border border-gray-100">
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-gray-900 mb-1">อิทธิพล สบายจิตต์</p>
+                        <p class="text-blue-600 font-semibold text-xl tracking-wide">091-018-0042</p>
+                        <p class="text-sm text-gray-500 mt-2">พร้อมเพย์ (PromptPay)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ข้อมูลที่ปรับปรุงความถูกต้องแล้ว (รวม เบนซ์/เบ้น และ แยก เขม เรียบร้อย)
+        const rawBills = [
+            { 
+                id: 1, name: "Naaban / Picasso - khem", date: "26 ก.ย.", image: "Project (1).jpg", 
+                payers: { "เขม": 222, "ฟิว": 329, "เบนซ์": 329, "ตอง": 329, "โบ๊ท": 329, "เจมส์": 329, "บิ๊ก": 329, "ทีม": 329, "ปัญ": 329, "อนาคิน": 107 } 
+            },
+            { 
+                id: 2, name: "Picasso - 12 ก.ย.", date: "12 ก.ย.", image: "Project (2).jpg", 
+                payers: { "เบนซ์": 232, "เจมส์": 232 } 
+            },
+            { 
+                id: 3, name: "Picasso BD", date: "8 ส.ค.", image: "Project (3).jpg", 
+                payers: { "เจมส์": 384.2, "เบนซ์": 384.2, "อิง": 384.2, "ฟิว": 384.2, "แจน": 384.2, "ตอง": 384.2, "ทีม": 384.2, "บิ๊ก": 384.2, "เขม": 384.2 } 
+            },
+            { 
+                id: 4, name: "Garuga house", date: "3 มิ.ย.", image: "Project (4).jpg", 
+                payers: { "เค้ก": 423.6, "เจ": 423.6, "เบนซ์": 902.6, "เขม": 902.6, "เจมส์": 239 } 
+            }
+        ];
+
+        function appData() {
+            return {
+                bills: rawBills,
+                selectedName: '',
+                currentUser: null,
+                activeFilter: 'all',
+                modalOpen: false,
+                modalImage: '',
+                qrOpen: false,
+                isLocked: false,
+
+                init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const name = urlParams.get('name');
+                    const isLockedParam = urlParams.get('lock') === 'true';
+                    if (name && this.uniqueNames.includes(name)) {
+                        this.selectedName = name;
+                        this.isLocked = isLockedParam;
+                        this.login();
+                    }
+                },
+
+                get uniqueNames() {
+                    const names = new Set();
+                    this.bills.forEach(b => Object.keys(b.payers).forEach(n => names.add(n)));
+                    return Array.from(names).sort();
+                },
+
+                get userBills() {
+                    if (!this.currentUser) return [];
+                    return this.bills.filter(b => b.payers[this.currentUser] !== undefined);
+                },
+
+                get filteredBills() {
+                    if (this.activeFilter === 'all') return this.userBills;
+                    return this.userBills.filter(b => b.id === this.activeFilter);
+                },
+
+                get totalAmount() {
+                    return this.filteredBills.reduce((sum, bill) => sum + bill.payers[this.currentUser], 0);
+                },
+
+                login() {
+                    if (this.selectedName) {
+                        this.currentUser = this.selectedName;
+                        this.activeFilter = 'all';
+                        window.history.pushState(null, '', '?name=' + encodeURIComponent(this.selectedName));
+                    }
+                },
+
+                logout() {
+                    this.currentUser = null;
+                    this.selectedName = '';
+                    window.history.pushState(null, '', window.location.pathname);
+                },
+
+                copyLink() {
+                    const link = window.location.origin + window.location.pathname + '?name=' + encodeURIComponent(this.currentUser) + '&lock=true';
+                    navigator.clipboard.writeText(link).then(() => {
+                        alert('คัดลอกลิ้งค์สำหรับ ' + this.currentUser + ' เรียบร้อยแล้ว!');
+                    });
+                },
+
+                openModal(img) {
+                    this.modalImage = img;
+                    this.modalOpen = true;
+                },
+
+                closeModal() {
+                    this.modalOpen = false;
+                },
+
+                formatMoney(amount) {
+                    return Number(amount).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
