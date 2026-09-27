@@ -134,16 +134,7 @@
                 </div>
                 
                 <div class="flex-1 flex items-center justify-center overflow-hidden bg-gray-900 rounded-xl border border-gray-800">
-                    <div class="text-center p-6">
-                        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        <p class="text-gray-400 text-sm mb-2">เมื่อนำไปสร้างเป็นเว็บไซต์จริง (Hosting)</p>
-                        <p class="text-gray-300 text-sm">ให้นำรูปภาพทั้ง 4 รูป (Project (1).jpg - Project (4).jpg) <br>ไปวางไว้ในโฟลเดอร์เดียวกับไฟล์ HTML นี้ <br>รูปภาพสลิปจะแสดงตรงนี้อัตโนมัติครับ</p>
-                        <p class="text-white font-mono bg-gray-800 px-3 py-1 rounded mt-4 text-xs" x-text="modalImage"></p>
-                    </div>
-                    <!-- 
-                    โค้ดสำหรับดึงรูปจริงมาแสดง (คอมเมนต์ไว้เพราะต้องมีไฟล์รูปอยู่ใน Server)
-                    <img :src="modalImage" class="max-w-full max-h-full object-contain rounded-lg" alt="Slip"> 
-                    -->
+                    <img :src="modalImage" class="max-w-full max-h-full object-contain rounded-lg shadow-xl" alt="Slip">
                 </div>
                 
                 <a :href="modalImage" :download="modalImage" class="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-lg flex items-center justify-center space-x-2 transition-all shadow-lg">
@@ -180,19 +171,19 @@
         // ข้อมูลที่ปรับปรุงความถูกต้องแล้ว (รวม เบนซ์/เบ้น และ แยก เขม เรียบร้อย)
         const rawBills = [
             { 
-                id: 1, name: "Naaban / Picasso - khem", date: "26 ก.ย.", image: "Project (1).jpg", 
+                id: 1, name: "Naaban / Picasso - khem", date: "26 ก.ย.", image: "Project (1).png", 
                 payers: { "เขม": 222, "ฟิว": 329, "เบนซ์": 329, "ตอง": 329, "โบ๊ท": 329, "เจมส์": 329, "บิ๊ก": 329, "ทีม": 329, "ปัญ": 329, "อนาคิน": 107 } 
             },
             { 
-                id: 2, name: "Picasso - 12 ก.ย.", date: "12 ก.ย.", image: "Project (2).jpg", 
+                id: 2, name: "Picasso - 12 ก.ย.", date: "12 ก.ย.", image: "Project (2).png", 
                 payers: { "เบนซ์": 232, "เจมส์": 232 } 
             },
             { 
-                id: 3, name: "Picasso BD", date: "8 ส.ค.", image: "Project (3).jpg", 
+                id: 3, name: "Picasso BD", date: "8 ส.ค.", image: "Project (3).png", 
                 payers: { "เจมส์": 384.2, "เบนซ์": 384.2, "อิง": 384.2, "ฟิว": 384.2, "แจน": 384.2, "ตอง": 384.2, "ทีม": 384.2, "บิ๊ก": 384.2, "เขม": 384.2 } 
             },
             { 
-                id: 4, name: "Garuga house", date: "3 มิ.ย.", image: "Project (4).jpg", 
+                id: 4, name: "Garuga house", date: "3 มิ.ย.", image: "Project (4).png", 
                 payers: { "เค้ก": 423.6, "เจ": 423.6, "เบนซ์": 902.6, "เขม": 902.6, "เจมส์": 239 } 
             }
         ];
